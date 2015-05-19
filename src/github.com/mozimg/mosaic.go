@@ -43,6 +43,20 @@ func generateMosaic(target image.Image, tiles []image.Image) image.Image {
 }
 
 
+// get the closest tile for a given value
+func getSimilarTile(value color.YCbCr, index *sortedMap) image.Image {
+	images := index.i
+	for len(images) > 1 {
+		mid := uint32(len(images)/2)
+		if value.Y > index.ycbcrm[images[mid]].Y {
+			images = images[mid:]
+		} else {
+			images = images[:mid]
+		}
+	}
+	return images[0]
+}
+
 // get image objects (color.YCbCr) given file paths
 func getImageObject(images []string) []image.Image {
 	objects := make([]image.Image, len(images))
