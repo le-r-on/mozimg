@@ -2,16 +2,43 @@ package main
 
 import(
 	"os"
+	"fmt"
 	_ "io"
+	"sort"
 	"image"
 	_ "io/ioutil"
     "image/color"
 	_ "image/jpeg"
 )
 
+
+// datastructure for sorting image.Image objects
+type sortedMap struct {
+	rgbm map[image.Image]color.RGBA
+	ycbcrm map[image.Image]color.YCbCr
+	i []image.Image
+}
+
+
+func (sm *sortedMap) Len() int {
+	return len(sm.i)
+}
+
+
+func (sm *sortedMap) Less(j, k int) bool {
+	return sm.ycbcrm[sm.i[j]].Y > sm.ycbcrm[sm.i[k]].Y
+}
+
+
+func (sm *sortedMap) Swap(j, k int) {
+	sm.i[j], sm.i[k] = sm.i[k], sm.i[j]
+}
+
+
 // generate mosaic given a target image, and an array of tile images
-func generateMosaic(target image.Image, tiles []image.Image) color.YCbCr {
-	_ := getTileIndex(tiles)
+func generateMosaic(target image.Image, tiles []image.Image) image.Image {
+	index := getTileIndex(tiles)
+	sort.Sort(index)
 	return target
 }
 
@@ -32,25 +59,33 @@ func getImageObject(images []string) []image.Image {
 }
 
 
-// create index mapping image object to its average YCbCr value
-func getTileIndex(tiles []image.Image) map[image.Image]color.YCbCr {
-	index := make(map[image.Image]color.YCbCr)
-	for _, tile := range(tiles) {
+// create index mapping image object to its average RGBA value
+func getTileIndex(tiles []image.Image) *sortedMap {
+	index := new(sortedMap)
+	index.rgbm = make(map[image.Image]color.RGBA)
+	index.ycbcrm = make(map[image.Image]color.YCbCr)
+	index.i = make([]image.Image, len(tiles))
+	for ind, tile := range(tiles) {
 		bounds := tile.Bounds()
-        ar, ag, ab := 0.0, 0.0, 0.0
+        ar, ag, ab, aa := 0.0, 0.0, 0.0, 0.0
 		numPix := float64((bounds.Max.X - bounds.Min.X) * (bounds.Max.Y - bounds.Min.Y))
         for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			for y:= bounds.Min.Y; y < bounds.Max.Y; y++ {
                 pixel := tile.At(x, y)
-                r, g, b, _ := pixel.RGBA()
+                r, g, b, a := pixel.RGBA()
                 ar += float64(r)
                 ag += float64(g)
                 ab += float64(b)
+				aa += float64(a)
 			}
 		}
-        y, cb, cr := color.RGBToYCbCr(uint8(ar/numPix), uint8(ag/numPix), uint8(ab/numPix))
-		average := color.YCbCr{Y: y, Cb: cb, Cr: cr}
-        index[tile] = average
+		averageRGBA := color.RGBA{R: uint8(ar/numPix), G: uint8(ag/numPix),
+		                          B: uint8(ab/numPix), A: uint8(aa/numPix)}
+		y, cb, cr := color.RGBToYCbCr(uint8(ar/numPix), uint8(ag/numPix), uint8(ab/numPix))
+		averageYCbCr := color.YCbCr{Y: y, Cb: cb, Cr: cr}
+		index.rgbm[tile] = averageRGBA
+		index.ycbcrm[tile] = averageYCbCr
+		index.i[ind] = tile
 	}
 	return index
 }
@@ -62,5 +97,5 @@ func main() {
     // command line
 	images := os.Args[1:]
 	objects := getImageObject(images)
-	generateMosaic(objects[0], objects[0:])
+	generateMosaic(objects[0], objects[1:])
 }
