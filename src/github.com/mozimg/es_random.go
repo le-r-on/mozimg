@@ -60,14 +60,21 @@ func randomThumbnails(size int) []image.Image {
     // Take twice as much since some thumbnails will be incessible
     urls := getUrls(int(math.Max(float64(size * 2), float64(5))))
 
-    images := make([]image.Image, size)
+    images := make([]image.Image, size, size)
     count := 0
     for _, url := range urls {
         buffer, err := fetchImage(url)
         if err == nil {
-            images[count] = imageFromReader(bytes.NewReader(buffer))
+            tmp := imageFromReader(bytes.NewReader(buffer))
+            if tmp != nil {
+                images[count] = tmp
+                count++
+            }
         } else {
             fmt.Println("Failed to fetch image", err)
+        }
+        if count == size {
+            break
         }
     }
 

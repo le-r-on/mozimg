@@ -5,7 +5,7 @@ import (
     _ "github.com/franela/goreq"
     "os"
     "html/template"
-    _ "fmt"
+    "fmt"
     "net/http"
     _ "log"
     "image"
@@ -31,13 +31,17 @@ func (c *Context) ShowPicture(rw web.ResponseWriter, req *web.Request) {
         error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to read file:" + err.Error())})
         return
     }
-    displayImgObj(rw, imgObj)
+    displayImgObjAndAvg(rw, imgObj)
 }
 
 func (c *Context) RefreshPicture(rw web.ResponseWriter, req *web.Request) {
-    img := randomThumbnails(1)[0]
-    displayImgObj(rw, img)
+    imgs := randomThumbnails(100)
+    fmt.Println(imgs)
+    resImage := generateMosaic(imgs[0], imgs[1:], 30, 30)
+    displayImgObjAndOrig(rw, resImage, imgs[0])
 }
+
+
 
 func (c *Context) UploadPicture(rw web.ResponseWriter, req *web.Request) {
     // the FormFile function takes in the POST input id file
@@ -50,7 +54,9 @@ func (c *Context) UploadPicture(rw web.ResponseWriter, req *web.Request) {
     }
 
     img := imageFromReader(file)
-    displayImgObj(rw, img)
+    tiles := randomThumbnails(50)
+    resImage := generateMosaic(img, tiles, 30, 30)
+    displayImgObjAndOrig(rw, resImage, img)
 
 }
 
@@ -73,10 +79,9 @@ func (c *Context) UploadPictures(rw web.ResponseWriter, req *web.Request) {
         }
 
         img := imageFromReader(file)
-        displayImgObj(rw, img)
+        displayImgObjAndAvg(rw, img)
     }
 }
-
 
 func main() {
     router := web.New(Context{}).

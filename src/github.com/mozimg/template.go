@@ -12,7 +12,7 @@ var base_tmpl = template.Must(template.New("mozimg").Parse(`
     <center>
         <div id="photo">
             <img alt="Embedded Image" style="max-height: 450px; max-width: 950px;" src="{{.Image}}"/>
-            <img alt="Avg color" style="max-height: 50; max-width: 50;" src="{{.AvgColor}}"/>
+            <img alt="Avg color" style="max-height: 250; max-width: 250;" src="{{.AvgColor}}"/>
         </div>
 
         <form  method="post" action="/">

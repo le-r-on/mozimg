@@ -34,12 +34,20 @@ func imageToB64(imageObj image.Image) string {
     return avgColorB64
 }
 
-func displayImgObj(rw web.ResponseWriter, imageObj image.Image) {
+func displayImgObjAndAvg(rw web.ResponseWriter, imageObj image.Image) {
     origImgB64 := imageToB64(imageObj)
     avgColorB64 := imageToB64(getAvgColorFromImg(imageObj))
     base_tmpl.Execute(
         rw,
         &Context{Image: template.URL(origImgB64), AvgColor: template.URL(avgColorB64)})
+}
+
+func displayImgObjAndOrig(rw web.ResponseWriter, imageObj image.Image, origImageObj image.Image) {
+    origImgB64 := imageToB64(imageObj)
+    origImageObjB64 := imageToB64(origImageObj)
+    base_tmpl.Execute(
+        rw,
+        &Context{Image: template.URL(origImgB64), AvgColor: template.URL(origImageObjB64)})
 }
 
 func imageFromReader(reader io.Reader) image.Image {
