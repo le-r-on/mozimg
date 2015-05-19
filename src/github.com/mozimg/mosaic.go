@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
+	"github.com/nfnt/resize"
 	"image"
 	"image/color"
-	_ "image/jpeg"
+	"image/draw"
+	"image/jpeg"
 	_ "io"
 	"os"
 	"sort"
@@ -36,16 +37,27 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 	bounds := target.Bounds()
 	x_length, y_length := int(bounds.Max.X/columns), int(bounds.Max.Y/rows)
 
+	ycbcrImg := target.(*image.YCbCr)
+	outImg := YCbCrToRGBA(ycbcrImg)
+
 	// iterate through target image's cells and get tile
 	for x := 0; x < bounds.Max.X-x_length; x += x_length {
 		for y := 0; y < bounds.Max.Y-y_length; y += y_length {
-			ycbcrImg := target.(*image.YCbCr)
-			cell := ycbcrImg.SubImage(image.Rect(x, x+x_length, y, y+y_length))
+			rect, dp := image.Rect(x, x+x_length, y, y+y_length), image.Point{X: x, Y: y}
+			cell := ycbcrImg.SubImage(rect)
 			_, averageYCbCr := getAverageColor(cell)
 			tile := getSimilarTile(averageYCbCr, index)
-			fmt.Printf("%T\n", tile)
+			tile = resize.Resize(uint(x_length), uint(y_length), tile, resize.Lanczos3)
+			r := image.Rectangle{dp, dp.Add(tile.Bounds().Size())}
+			draw.Draw(outImg, r, tile, tile.Bounds().Min, draw.Src)
 		}
 	}
+	out, _ := os.Create("./output.jpg")
+	defer out.Close()
+	var opt jpeg.Options
+	opt.Quality = 80
+	jpeg.Encode(out, outImg, &opt)
+
 	return target
 }
 
@@ -114,6 +126,26 @@ func getAverageColor(img image.Image) (color.RGBA, color.YCbCr) {
 	averageYCbCr := color.YCbCr{Y: y, Cb: cb, Cr: cr}
 
 	return averageRGBA, averageYCbCr
+}
+
+// Convert YCbCr image to RGBA
+func YCbCrToRGBA(src *image.YCbCr) *image.RGBA {
+	bounds := src.Bounds()
+	w, h := bounds.Max.X, bounds.Max.Y
+	rgb := image.NewRGBA(bounds)
+	for x := 0; x < w; x++ {
+		for y := 0; y < h; y++ {
+			oldColor := src.At(x, y)
+			rgbColor := rgb.ColorModel().Convert(oldColor)
+			rgb.Set(x, y, rgbColor)
+		}
+	}
+	out, _ := os.Create("./output.jpg")
+	defer out.Close()
+	var opt jpeg.Options
+	opt.Quality = 80
+	jpeg.Encode(out, rgb, &opt)
+	return rgb
 }
 
 // main
