@@ -1,12 +1,13 @@
 package main
 
 import (
-    "github.com/polds/imgbase64"
+    _ "github.com/polds/imgbase64"
     "github.com/franela/goreq"
     "fmt"
     "regexp"
     "bytes"
     "math"
+    "image"
 )
 
 func fetchImage(url string) ([]byte, error) {
@@ -55,16 +56,16 @@ func getUrls(size int) []string {
     return urls
 }
 
-func randomThumbnails(size int) []string {
+func randomThumbnails(size int) []image.Image {
     // Take twice as much since some thumbnails will be incessible
     urls := getUrls(int(math.Max(float64(size * 2), float64(5))))
 
-    images := make([]string, size)
+    images := make([]image.Image, size)
     count := 0
     for _, url := range urls {
         buffer, err := fetchImage(url)
         if err == nil {
-            images[count] = imgbase64.FromBuffer(*bytes.NewBuffer(buffer))
+            images[count] = imageFromReader(bytes.NewReader(buffer))
         } else {
             fmt.Println("Failed to fetch image", err)
         }
