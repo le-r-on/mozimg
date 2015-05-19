@@ -58,7 +58,7 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 	opt.Quality = 80
 	jpeg.Encode(out, outImg, &opt)
 
-	return target
+	return outImg
 }
 
 // get the closest tile for a given value
@@ -149,10 +149,10 @@ func YCbCrToRGBA(src *image.YCbCr) *image.RGBA {
 }
 
 // main
-func main() {
-	// read target image and tile images paths from the
-	// command line
-	images := os.Args[1:]
-	objects := getImageObject(images)
-	generateMosaic(objects[0], objects[1:], 10, 10)
-}
+// func main() {
+// 	// read target image and tile images paths from the
+// 	// command line
+// 	images := os.Args[1:]
+// 	objects := getImageObject(images)
+// 	generateMosaic(objects[0], objects[1:], 10, 10)
+// }
