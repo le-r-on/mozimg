@@ -11,6 +11,7 @@ import (
     "image"
     _ "image/jpeg"
     _ "image/color"
+    "strconv"
 )
 
 const MAX_FILE_SIZE = 1024 * 1024
@@ -35,13 +36,11 @@ func (c *Context) ShowPicture(rw web.ResponseWriter, req *web.Request) {
 }
 
 func (c *Context) RefreshPicture(rw web.ResponseWriter, req *web.Request) {
-    imgs := randomThumbnails(100)
+    imgs := randomThumbnails(15)
     fmt.Println(imgs)
-    resImage := generateMosaic(imgs[0], imgs[1:], 30, 30)
+    resImage := generateMosaic(imgs[0], imgs[1:], 60, 60)
     displayImgObjAndOrig(rw, resImage, imgs[0])
 }
-
-
 
 func (c *Context) UploadPicture(rw web.ResponseWriter, req *web.Request) {
     // the FormFile function takes in the POST input id file
@@ -55,18 +54,22 @@ func (c *Context) UploadPicture(rw web.ResponseWriter, req *web.Request) {
 
     img := imageFromReader(file)
     tiles := randomThumbnails(50)
-    resImage := generateMosaic(img, tiles, 30, 30)
+    resImage := generateMosaic(img, tiles, 3, 3)
     displayImgObjAndOrig(rw, resImage, img)
 
 }
 
-func (c *Context) UploadPictures(rw web.ResponseWriter, req *web.Request) {
+func (c *Context) TilePicture(rw web.ResponseWriter, req *web.Request) {
     // the FormFile function takes in the POST input id file
     err := req.ParseMultipartForm(int64(MAX_FILE_SIZE * MAX_NUMBER_OF_FILES))
     if err != nil {
         error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to parse multipart")})
         return
     }
+
+    dimension, _ := strconv.Atoi(req.Form["dimension"][0])
+
+    tiles := make([]image.Image, 0)
 
     files := req.MultipartForm.File["files"]
     for _, file := range files {
@@ -78,17 +81,27 @@ func (c *Context) UploadPictures(rw web.ResponseWriter, req *web.Request) {
             return
         }
 
-        img := imageFromReader(file)
-        displayImgObjAndAvg(rw, img)
+        tiles = append(tiles, imageFromReader(file))
     }
+
+    file, _, err := req.FormFile("file")
+    defer file.Close()
+
+    if err != nil {
+        error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to read from a user")})
+        return
+    }
+
+    img := imageFromReader(file)
+    resImage := generateMosaic(img, tiles, dimension, dimension)
+    displayImgObjAndOrig(rw, resImage, img)
 }
 
 func main() {
     router := web.New(Context{}).
         Get("/", (*Context).ShowPicture).
         Post("/", (*Context).RefreshPicture).
-        Post("/upload", (*Context).UploadPicture).
-        Post("/upload_dir", (*Context).UploadPictures)
+        Post("/tile", (*Context).TilePicture)
 
     http.ListenAndServe("localhost:3000", router)
 }

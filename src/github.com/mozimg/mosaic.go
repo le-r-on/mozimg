@@ -9,6 +9,7 @@ import (
 	_ "io"
 	"os"
 	"sort"
+	"fmt"
 )
 
 // datastructure for sorting image.Image objects
@@ -43,7 +44,7 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 	// iterate through target image's cells and get tile
 	for x := 0; x < bounds.Max.X-x_length; x += x_length {
 		for y := 0; y < bounds.Max.Y-y_length; y += y_length {
-			rect, dp := image.Rect(x, x+x_length, y, y+y_length), image.Point{X: x, Y: y}
+			rect, dp := image.Rect(x, y, x+x_length, y+y_length), image.Point{X: x, Y: y}
 			cell := ycbcrImg.SubImage(rect)
 			_, averageYCbCr := getAverageColor(cell)
 			tile := getSimilarTile(averageYCbCr, index)
@@ -64,14 +65,22 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 // get the closest tile for a given value
 func getSimilarTile(value color.YCbCr, index *sortedMap) image.Image {
 	images := index.i
+	fmt.Println("Target", value.Y)
+
+	for i := 0; i < len(images); i++ {
+		fmt.Printf("%d ", index.ycbcrm[images[i]].Y)
+	}
+	fmt.Printf("\n")
+
 	for len(images) > 1 {
 		mid := uint32(len(images) / 2)
 		if value.Y > index.ycbcrm[images[mid]].Y {
-			images = images[mid:]
-		} else {
 			images = images[:mid]
+		} else {
+			images = images[mid:]
 		}
 	}
+	fmt.Println("Result", index.ycbcrm[images[0]].Y)
 	return images[0]
 }
 

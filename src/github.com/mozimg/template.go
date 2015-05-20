@@ -16,17 +16,16 @@ var base_tmpl = template.Must(template.New("mozimg").Parse(`
         </div>
 
         <form  method="post" action="/">
-          <input type="submit" value="Get new photo"/> 
+          <input type="submit" value="Get new random photo"/> 
         </form>
-        <form  method="post" action="/upload" enctype="multipart/form-data">
-          <label for="file">Filename:</label>
+        <form  method="post" action="/tile" enctype="multipart/form-data">
+          <label for="file">Photo:</label>
           <input type="file" name="file" id="file" required>
-          <input type="submit" name="submit" value="Display your photo">
-        </form> 
-        <form method="post" action="/upload_dir" enctype="multipart/form-data">
-          <label for="file">Directory:</label>
+          <label for="file">Tiles:</label>
           <input type="file" multiple name="files" id="files" required>
+          <input type="text" name="dimension" placeholder="Tile dimension" required>
           <input type="submit" name="submit" value="Load tiles">
+
         </form>
     </center>
 </body>
