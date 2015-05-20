@@ -18,9 +18,9 @@ const MAX_FILE_SIZE = 1024 * 1024
 const MAX_NUMBER_OF_FILES = 100
 
 type Context struct {
-    Image template.URL
+    TiledImage template.URL
+    OrigImage template.URL
     Message template.URL
-    AvgColor template.URL
 }
 
 func (c *Context) ShowPicture(rw web.ResponseWriter, req *web.Request) {
@@ -32,45 +32,39 @@ func (c *Context) ShowPicture(rw web.ResponseWriter, req *web.Request) {
         error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to read file:" + err.Error())})
         return
     }
-    displayImgObjAndAvg(rw, imgObj)
+    displayImgObj(rw, imgObj)
 }
 
 func (c *Context) RefreshPicture(rw web.ResponseWriter, req *web.Request) {
-    imgs := randomThumbnails(15)
-    fmt.Println(imgs)
-    resImage := generateMosaic(imgs[0], imgs[1:], 60, 60)
+    req.ParseMultipartForm(1024)
+
+    dimension, err := strconv.Atoi(req.Form["dimension"][0])
+    if err != nil {
+        dimension = 50
+    }
+    pic_num, err := strconv.Atoi(req.Form["pic_num"][0])
+    if err != nil {
+        pic_num = 100
+    }
+
+    fmt.Println("Getting images from elastic")
+    imgs := randomThumbnails(pic_num)
+    fmt.Println("Generating mosaic")
+    resImage := generateMosaic(imgs[0], imgs[1:], dimension, dimension)
+    fmt.Println("Displaying results")
     displayImgObjAndOrig(rw, resImage, imgs[0])
 }
 
-func (c *Context) UploadPicture(rw web.ResponseWriter, req *web.Request) {
-    // the FormFile function takes in the POST input id file
-    file, _, err := req.FormFile("file")
-    defer file.Close()
-
-    if err != nil {
-        error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to read from a user")})
-        return
-    }
-
-    img := imageFromReader(file)
-    tiles := randomThumbnails(50)
-    resImage := generateMosaic(img, tiles, 3, 3)
-    displayImgObjAndOrig(rw, resImage, img)
-
-}
-
 func (c *Context) TilePicture(rw web.ResponseWriter, req *web.Request) {
-    // the FormFile function takes in the POST input id file
+    fmt.Println(req.Form)
     err := req.ParseMultipartForm(int64(MAX_FILE_SIZE * MAX_NUMBER_OF_FILES))
     if err != nil {
         error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to parse multipart")})
         return
     }
 
-    dimension, _ := strconv.Atoi(req.Form["dimension"][0])
-
+    fmt.Println("Fetching tiles from user")
     tiles := make([]image.Image, 0)
-
     files := req.MultipartForm.File["files"]
     for _, file := range files {
         file, err := file.Open()
@@ -84,6 +78,7 @@ func (c *Context) TilePicture(rw web.ResponseWriter, req *web.Request) {
         tiles = append(tiles, imageFromReader(file))
     }
 
+    fmt.Println("Fetching base file from user")
     file, _, err := req.FormFile("file")
     defer file.Close()
 
@@ -91,9 +86,13 @@ func (c *Context) TilePicture(rw web.ResponseWriter, req *web.Request) {
         error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to read from a user")})
         return
     }
-
     img := imageFromReader(file)
+
+    dimension, _ := strconv.Atoi(req.Form["dimension"][0])
+
+    fmt.Println("Generating mosaic")
     resImage := generateMosaic(img, tiles, dimension, dimension)
+    fmt.Println("Displaying results")
     displayImgObjAndOrig(rw, resImage, img)
 }
 

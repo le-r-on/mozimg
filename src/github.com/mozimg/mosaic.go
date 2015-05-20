@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "fmt"
+	"fmt"
 	"github.com/nfnt/resize"
 	"image"
 	"image/color"
@@ -34,6 +34,8 @@ func (sm *sortedMap) Swap(j, k int) {
 
 // generate mosaic given a target image, and an array of tile images
 func generateMosaic(target image.Image, tiles []image.Image, rows int, columns int) image.Image {
+	fmt.Println("Mosaic: generating and sorting index")
+	
 	index := getTileIndex(tiles)
 	sort.Sort(index)
 	bounds := target.Bounds()
@@ -45,9 +47,11 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 	// memoize tile thumbnails
 	thumbnails := make(map[image.Image]image.Image)
 
+	fmt.Println("Mosaic: iterating through tiles")
 	// iterate through target image's cells and get tile
-	for x := 0; x < bounds.Max.X-x_length; x += x_length {
-		for y := 0; y < bounds.Max.Y-y_length; y += y_length {
+	for x := 0; x < bounds.Max.X; x += x_length {
+		fmt.Printf("Mosaic: iterating through tiles, %d left\n", (bounds.Max.X - x) / x_length)
+		for y := 0; y < bounds.Max.Y; y += y_length {
 			rect, dp := image.Rect(x, y, x+x_length, y+y_length), image.Point{X: x, Y: y}
 			cell := ycbcrImg.SubImage(rect)
 			_, averageYCbCr := getAverageColor(cell)
@@ -63,12 +67,6 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 			draw.Draw(outImg, r, tile, tile.Bounds().Min, draw.Src)
 		}
 	}
-	out, _ := os.Create("./output.jpg")
-	defer out.Close()
-	var opt jpeg.Options
-	opt.Quality = 80
-	jpeg.Encode(out, outImg, &opt)
-
 	return outImg
 }
 
@@ -118,12 +116,13 @@ func getTileIndex(tiles []image.Image) *sortedMap {
 
 // get average RGBA, YCbCr color values given an image
 func getAverageColor(img image.Image) (color.RGBA, color.YCbCr) {
-	bounds := img.Bounds()
+	normlized_image := resize.Resize(100, 100, img, resize.Lanczos3)
+	bounds := normlized_image.Bounds()
 	ar, ag, ab, aa := 0.0, 0.0, 0.0, 0.0
 	numPix := float64((bounds.Max.X - bounds.Min.X) * (bounds.Max.Y - bounds.Min.Y))
 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			pixel := img.At(x, y)
+			pixel := normlized_image.At(x, y)
 			r, g, b, a := pixel.RGBA()
 			asqrt := math.Sqrt(float64(a))
 			ar += math.Floor(float64(r) / asqrt)
