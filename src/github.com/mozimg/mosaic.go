@@ -42,6 +42,9 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 	ycbcrImg := target.(*image.YCbCr)
 	outImg := YCbCrToRGBA(ycbcrImg)
 
+	// memoize tile thumbnails
+	thumbnails := make(map[image.Image]image.Image)
+
 	// iterate through target image's cells and get tile
 	for x := 0; x < bounds.Max.X-x_length; x += x_length {
 		for y := 0; y < bounds.Max.Y-y_length; y += y_length {
@@ -49,7 +52,13 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 			cell := ycbcrImg.SubImage(rect)
 			_, averageYCbCr := getAverageColor(cell)
 			tile := getSimilarTile(averageYCbCr, index)
-			tile = resize.Resize(uint(x_length), uint(y_length), tile, resize.Lanczos3)
+			if val, ok := thumbnails[tile]; ok {
+				tile = val
+			} else {
+				val = resize.Resize(uint(x_length), uint(y_length), tile, resize.Lanczos3)
+				thumbnails[tile] = val
+				tile = val
+			}
 			r := image.Rectangle{dp, dp.Add(tile.Bounds().Size())}
 			draw.Draw(outImg, r, tile, tile.Bounds().Min, draw.Src)
 		}
@@ -66,13 +75,6 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 // get the closest tile for a given value
 func getSimilarTile(value color.YCbCr, index *sortedMap) image.Image {
 	images := index.i
-	fmt.Println("Target", value.Y)
-
-	for i := 0; i < len(images); i++ {
-		fmt.Printf("%d ", index.ycbcrm[images[i]].Y)
-	}
-	fmt.Printf("\n")
-
 	for len(images) > 1 {
 		mid := uint32(len(images) / 2)
 		if value.Y > index.ycbcrm[images[mid]].Y {
@@ -81,7 +83,6 @@ func getSimilarTile(value color.YCbCr, index *sortedMap) image.Image {
 			images = images[mid:]
 		}
 	}
-	fmt.Println("Result", index.ycbcrm[images[0]].Y)
 	return images[0]
 }
 
