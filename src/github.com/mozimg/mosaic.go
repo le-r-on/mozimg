@@ -35,7 +35,7 @@ func (sm *sortedMap) Swap(j, k int) {
 // generate mosaic given a target image, and an array of tile images
 func generateMosaic(target image.Image, tiles []image.Image, rows int, columns int) image.Image {
 	fmt.Println("Mosaic: generating and sorting index")
-	
+
 	index := getTileIndex(tiles)
 	sort.Sort(index)
 	bounds := target.Bounds()
@@ -50,7 +50,7 @@ func generateMosaic(target image.Image, tiles []image.Image, rows int, columns i
 	fmt.Println("Mosaic: iterating through tiles")
 	// iterate through target image's cells and get tile
 	for x := 0; x < bounds.Max.X; x += x_length {
-		fmt.Printf("Mosaic: iterating through tiles, %d left\n", (bounds.Max.X - x) / x_length)
+		fmt.Printf("Mosaic: iterating through tiles, %d left\n", (bounds.Max.X-x)/x_length)
 		for y := 0; y < bounds.Max.Y; y += y_length {
 			rect, dp := image.Rect(x, y, x+x_length, y+y_length), image.Point{X: x, Y: y}
 			cell := ycbcrImg.SubImage(rect)
@@ -158,12 +158,3 @@ func YCbCrToRGBA(src *image.YCbCr) *image.RGBA {
 	jpeg.Encode(out, rgb, &opt)
 	return rgb
 }
-
-// main
-// func main() {
-// 	// read target image and tile images paths from the
-// 	// command line
-// 	images := os.Args[1:]
-// 	objects := getImageObject(images)
-// 	generateMosaic(objects[0], objects[1:], 10, 10)
-// }
