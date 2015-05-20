@@ -1,15 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"github.com/nfnt/resize"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/jpeg"
 	_ "io"
+	"math"
 	"os"
 	"sort"
-	"fmt"
 )
 
 // datastructure for sorting image.Image objects
@@ -123,10 +124,11 @@ func getAverageColor(img image.Image) (color.RGBA, color.YCbCr) {
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			pixel := img.At(x, y)
 			r, g, b, a := pixel.RGBA()
-			ar += float64(r)
-			ag += float64(g)
-			ab += float64(b)
-			aa += float64(a)
+			asqrt := math.Sqrt(float64(a))
+			ar += math.Floor(float64(r) / asqrt)
+			ag += math.Floor(float64(g) / asqrt)
+			ab += math.Floor(float64(b) / asqrt)
+			aa += math.Floor(asqrt)
 		}
 	}
 	r, g, b, a := uint8(ar/numPix), uint8(ag/numPix), uint8(ab/numPix), uint8(aa/numPix)
