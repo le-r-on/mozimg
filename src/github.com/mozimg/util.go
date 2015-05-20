@@ -17,7 +17,7 @@ import (
 )
 
 func getAvgColorFromImg(imageObj image.Image) image.Image {
-    avgColor, _ := getAverageColor(imageObj)
+    avgColor, _ := getAverageColor(&imageObj)
     avgColorImg := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{32, 32}})
     for y := 0; y < 32; y++ {
         for x := 0; x < 32; x++ {
@@ -34,16 +34,16 @@ func imageToB64(imageObj image.Image) string {
     return avgColorB64
 }
 
-func displayImgObj(rw web.ResponseWriter, imageObj image.Image) {
-    origImgB64 := imageToB64(imageObj)
+func displayImgObj(rw web.ResponseWriter, imageObj *image.Image) {
+    origImgB64 := imageToB64(*imageObj)
     base_tmpl.Execute(
         rw,
         &Context{TiledImage: template.URL(origImgB64)})
 }
 
-func displayImgObjAndOrig(rw web.ResponseWriter, imageObj image.Image, origImageObj image.Image) {
-    origImgB64 := imageToB64(imageObj)
-    origImageObjB64 := imageToB64(origImageObj)
+func displayImgObjAndOrig(rw web.ResponseWriter, imageObj *image.Image, origImageObj *image.Image) {
+    origImgB64 := imageToB64(*imageObj)
+    origImageObjB64 := imageToB64(*origImageObj)
     base_tmpl.Execute(
         rw,
         &Context{TiledImage: template.URL(origImgB64), OrigImage: template.URL(origImageObjB64)})

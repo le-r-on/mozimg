@@ -56,18 +56,18 @@ func getUrls(size int) []string {
     return urls
 }
 
-func randomThumbnails(size int) []image.Image {
+func randomThumbnails(size int) []*image.Image {
     // Take twice as much since some thumbnails will be incessible
     urls := getUrls(int(math.Max(float64(size * 2), float64(5))))
 
-    images := make([]image.Image, size, size)
+    images := make([]*image.Image, size, size)
     count := 0
     for _, url := range urls {
         buffer, err := fetchImage(url)
         if err == nil {
             tmp := imageFromReader(bytes.NewReader(buffer))
             if tmp != nil {
-                images[count] = tmp
+                images[count] = &tmp
                 count++
             }
         } else {

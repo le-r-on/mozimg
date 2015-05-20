@@ -32,7 +32,7 @@ func (c *Context) ShowPicture(rw web.ResponseWriter, req *web.Request) {
         error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to read file:" + err.Error())})
         return
     }
-    displayImgObj(rw, imgObj)
+    displayImgObj(rw, &imgObj)
 }
 
 func (c *Context) RefreshPicture(rw web.ResponseWriter, req *web.Request) {
@@ -40,7 +40,7 @@ func (c *Context) RefreshPicture(rw web.ResponseWriter, req *web.Request) {
 
     dimension, err := strconv.Atoi(req.Form["dimension"][0])
     if err != nil {
-        dimension = 50
+        dimension = 80
     }
     pic_num, err := strconv.Atoi(req.Form["pic_num"][0])
     if err != nil {
@@ -52,11 +52,10 @@ func (c *Context) RefreshPicture(rw web.ResponseWriter, req *web.Request) {
     fmt.Println("Generating mosaic")
     resImage := generateMosaic(imgs[0], imgs[1:], dimension, dimension)
     fmt.Println("Displaying results")
-    displayImgObjAndOrig(rw, resImage, imgs[0])
+    displayImgObjAndOrig(rw, &resImage, imgs[0])
 }
 
 func (c *Context) TilePicture(rw web.ResponseWriter, req *web.Request) {
-    fmt.Println(req.Form)
     err := req.ParseMultipartForm(int64(MAX_FILE_SIZE * MAX_NUMBER_OF_FILES))
     if err != nil {
         error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to parse multipart")})
@@ -64,7 +63,7 @@ func (c *Context) TilePicture(rw web.ResponseWriter, req *web.Request) {
     }
 
     fmt.Println("Fetching tiles from user")
-    tiles := make([]image.Image, 0)
+    tiles := make([]*image.Image, 0)
     files := req.MultipartForm.File["files"]
     for _, file := range files {
         file, err := file.Open()
@@ -75,7 +74,8 @@ func (c *Context) TilePicture(rw web.ResponseWriter, req *web.Request) {
             return
         }
 
-        tiles = append(tiles, imageFromReader(file))
+        img := imageFromReader(file)
+        tiles = append(tiles, &img)
     }
 
     fmt.Println("Fetching base file from user")
@@ -86,14 +86,15 @@ func (c *Context) TilePicture(rw web.ResponseWriter, req *web.Request) {
         error_tmpl.Execute(rw, &Context{Message: template.URL("Failed to read from a user")})
         return
     }
+
     img := imageFromReader(file)
 
     dimension, _ := strconv.Atoi(req.Form["dimension"][0])
 
     fmt.Println("Generating mosaic")
-    resImage := generateMosaic(img, tiles, dimension, dimension)
+    resImage := generateMosaic(&img, tiles, dimension, dimension)
     fmt.Println("Displaying results")
-    displayImgObjAndOrig(rw, resImage, img)
+    displayImgObjAndOrig(rw, &resImage, &img)
 }
 
 func main() {
